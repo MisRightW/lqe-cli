@@ -1,0 +1,40 @@
+{
+  "name": "lqe-cli",
+  "version": "1.0.0",
+  "description": "A own cli.",
+  "main": "index.js",
+  "bin": {
+    "create-lib": "bin/index.js",
+    "cli": "bin/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node bin/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MisRightW/lqe-cli.git"
+  },
+  "keywords": [],
+  "author": "lingquer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MisRightW/lqe-cli/issues"
+  },
+  "homepage": "https://github.com/MisRightW/lqe-cli#readme",
+  "dependencies": {
+    "chalk": "^5.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "commander": "^10.0.1",
+    "ejs": "^3.1.6",
+    "execa": "^6.0.0",
+    "inquirer": "^8.2.0",
+    "prettier": "^2.5.1"
+  },
+  "files": [
+    "bin",
+    "prompt",
+    "template",
+    "utils"
+  ]
+}
