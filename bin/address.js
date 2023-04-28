@@ -1,51 +1,109 @@
+import axios from 'axios'
 import cheerio from 'cheerio'
+import fs from 'fs'
 
-function getAddress() {
-  //1、创建一个 xhr 的对象
-  let xhr = new XMLHttpRequest()
-  //2、调用xhr中的open()函数,创建一个Ajax的请求
-  xhr.open('GET', 'https://www.mca.gov.cn/article/sj/xzqh/2022/202201xzqh.html')
-  //3、调用xhr的send函数，发起请求
-  xhr.send()
-  //4、监听 onreadystatechange 事件
-  xhr.onreadystatechange = function () {
-    //固定写法
-    if (xhr.readyState === 4 && xhr.status === 200) {  
-        //数据获取成功，获取服务器响应的数据 
-        console.log(xhr.responseText)
-        change(xhr.responseText)
+class ArrayStack {
+    constructor() {
+        this.data = [];
     }
-  }
+    size() {
+        return this.data.length;
+    }
+    isEmpty() {
+        return this.data.length === 0;
+    }
+    push(e) {
+        this.data.push(e);
+    }
+    pop() {
+        if (this.isEmpty()) {
+            throw new Error('Stack is empty');
+        }
+        return this.data.pop();
+    }
+    top() {
+        if (this.isEmpty()) {
+            throw new Error('Stack is empty');
+        }
+        return this.data[this.size()-1];
+    }
 }
 
-function change(addr) {
-  const value = []
-  const $ = cheerio.load(addr)
-  var tds = $('td')
-  // tds.each((index, item) => {
-  //   var text = item.text;
-  //   if (text) {
-  //     value.push('')
-  //   }
-  // })
-  let table = getTables($)
-  console.log('table', table)
+async function getPageContent(url) {
+    try {
+        const response = await axios.get(url);
+        if (response.status === 200) {
+            return response.data;
+        }
+    } catch(error) {
+        console.error(`Failed to fetch page content from ${url}: ${error}`);
+    }
 }
 
-/* 解析页面 HTML 表格为 JSON 数据 */
-function getTables(document){
-	var tables = [], tablesHtml = document.querySelectorAll('table');
+function parseDistrictData(items) {
+    const stack = new ArrayStack();
+    const data = {};
 
-	tablesHtml.forEach(function(tb){
-		var table = [];
-		tb.querySelectorAll('tr').forEach(function(tr){
-			var line = [];
-			tr.querySelectorAll('th, td').forEach(function(td){
-				line.push(td.innerText);
-			});
-			table.push(line);
-		});
-		tables.push(table);
-	});
-	return tables;
+    let pro = '';
+    let city = '';
+
+    for (let i=0; i<items.length; i++) {
+        const sp = cheerio.load(items[i], {normalizeWhitespace: true});
+        const span = sp('span');
+        const value = sp.text().trim();
+
+        if (!value) {
+            continue;
+        }
+
+        stack.push(value);
+
+        if (stack.size() < 2) {
+            continue;
+        }
+
+        if (span && span.text().length === 1) {
+            // 市级
+            const name = value;
+            city = stack.pop();
+            data[pro + name] = stack.pop();
+        } else if (span && span.text().length === 3) {
+            // 县级
+            const name = value;
+            stack.pop();
+            data[pro + city + name] = stack.pop();
+        } else {
+            // 省级
+            const name = value;
+            pro = stack.pop();
+            data[name] = stack.pop();
+        }
+    }
+
+    return data;
 }
+
+function saveDictToFile(data, filename) {
+    fs.writeFile(filename, JSON.stringify(data, null, 4), 'utf8', function(err) {
+        if (err) {
+            console.error(`Failed to write data to file ${filename}: ${err}`);
+        } else {
+            console.log(`Data saved to file ${filename}`);
+        }
+    });
+}
+
+async function main() {
+    const url = "https://www.mca.gov.cn/article/sj/xzqh/2022/202201xzqh.html";
+    try {
+        const html = await getPageContent(url);
+        const items = cheerio.load(html, {normalizeWhitespace: true})('td.xl7032365,td.xl7132365');
+        const data = parseDistrictData(items);
+        saveDictToFile(data, 'district_data2.json');
+        console.log(data);
+    } catch (error) {
+        console.error(`An error occurred: ${error}`);
+    }
+}
+
+main();
