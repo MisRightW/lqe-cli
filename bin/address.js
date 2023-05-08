@@ -42,7 +42,10 @@ async function getPageContent(url) {
 
 function parseDistrictData(items) {
     const stack = new ArrayStack();
+    // 包含区划代码
     const data = {};
+    // 只是省市区县
+    const data2 = [];
 
     let pro = '';
     let city = '';
@@ -67,11 +70,13 @@ function parseDistrictData(items) {
             const name = value;
             city = stack.pop();
             data[pro + name] = stack.pop();
+            data2.push(pro + ',' + name)
         } else if (span && span.text().length === 3) {
             // 县级
             const name = value;
             stack.pop();
             data[pro + city + name] = stack.pop();
+            data2.push(pro + ',' + city + ',' + name)
         } else {
             // 省级
             const name = value;
@@ -80,7 +85,7 @@ function parseDistrictData(items) {
         }
     }
 
-    return data;
+    return data2;
 }
 
 function saveDictToFile(data, filename) {
@@ -99,7 +104,7 @@ async function main() {
         const html = await getPageContent(url);
         const items = cheerio.load(html, {normalizeWhitespace: true})('td.xl7032365,td.xl7132365');
         const data = parseDistrictData(items);
-        saveDictToFile(data, 'district_data2.json');
+        saveDictToFile(data, 'district_data3.json');
         console.log(data);
     } catch (error) {
         console.error(`An error occurred: ${error}`);

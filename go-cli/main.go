@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// 匹配测试
-	input := "广东省广州市华南新村"
+	input := "华南新村"
 	addr := matchAddress(addresses, input)
 	if addr != nil {
 		fmt.Printf("匹配成功，地址信息为：%s%s%s%s%s\n", addr.Province, addr.City, addr.District, addr.Town, addr.Village)
